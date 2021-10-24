@@ -1,15 +1,68 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_demo/widgets/chat/messages.dart';
 import 'package:firebase_demo/widgets/chat/new_message.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ChatScreen extends StatelessWidget {
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('A bg message just showed up: ${message.messageId}');
+}
+
+class ChatScreen extends StatefulWidget {
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    final fbm = FirebaseMessaging.instance;
+
+    fbm.requestPermission().then((settings) async {
+      print("Permission granted!");
+
+      fbm.getToken().then((value) {
+        print("Here is the token!!!!!");
+        print(value);
+      });
+
+      fbm.subscribeToTopic('chat');
+
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+              alert: true, badge: true, sound: true);
+
+      await FirebaseMessaging.instance
+          .getInitialMessage()
+          .then((RemoteMessage? message) {
+        if (message != null) {
+          print(message);
+        }
+      });
+
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
+
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        RemoteNotification? notification = message.notification;
+        AndroidNotification? android = message.notification?.android;
+        print(notification);
+      });
+
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        print('A new onMessageOpenedApp event was published!');
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("FlutterChat"), actions: [
         DropdownButton(
+            underline: Container(),
             icon: Icon(Icons.more_vert,
                 color: Theme.of(context).primaryIconTheme.color),
             items: [
@@ -22,7 +75,7 @@ class ChatScreen extends StatelessWidget {
                   ])),
                   value: 'logout')
             ],
-            onChanged: (itemIdentifier) {
+            onChanged: (dynamic itemIdentifier) {
               if (itemIdentifier == 'logout') {
                 FirebaseAuth.instance.signOut();
               }

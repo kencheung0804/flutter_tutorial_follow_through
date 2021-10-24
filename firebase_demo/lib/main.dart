@@ -1,14 +1,25 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_demo/screens/auth_screen.dart';
+import 'package:firebase_demo/screens/splash_screen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'screens/chat_screen.dart';
 
-void main() => runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
+}
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -32,22 +43,16 @@ class MyApp extends StatelessWidget {
                 textTheme: ButtonTextTheme.primary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20)))),
-        home: FutureBuilder(
-          // Initialize FlutterFire:
-          future: Firebase.initializeApp(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
-            return StreamBuilder(
-                stream: FirebaseAuth.instance.authStateChanges(),
-                builder: (ctx, userSnapshot) {
-                  if (userSnapshot.hasData) {
-                    return ChatScreen();
-                  }
-                  return AuthScreen();
-                });
-          },
-        ));
+        home: StreamBuilder(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (ctx, userSnapshot) {
+              if (userSnapshot.connectionState == ConnectionState.waiting) {
+                return SplashScreen()
+              }
+              if (userSnapshot.hasData) {
+                return ChatScreen();
+              }
+              return AuthScreen();
+            }));
   }
 }

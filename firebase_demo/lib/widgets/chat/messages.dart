@@ -16,14 +16,17 @@ class Messages extends StatelessWidget {
           if (chatSnapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
-          final chatDocs = chatSnapshot.data.docs;
+          final chatDocs =
+              (chatSnapshot.data as QuerySnapshot<Map<String, dynamic>>).docs;
           return ListView.builder(
             reverse: true,
             itemCount: chatDocs.length,
             itemBuilder: (ctx, index) => MessageBubble(
                 chatDocs[index]['text'],
+                chatDocs[index]['username'],
+                chatDocs[index]['userImage'],
                 chatDocs[index]['userId'] ==
-                    FirebaseAuth.instance.currentUser.uid,
+                    FirebaseAuth.instance.currentUser!.uid,
                 key: ValueKey(chatDocs[index].id)),
           );
         });
